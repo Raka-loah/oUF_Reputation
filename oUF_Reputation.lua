@@ -72,12 +72,28 @@ local function GetReputation()
 	local pendingReward
 	local name, standingID, min, max, cur, factionID = GetWatchedFactionInfo()
 
-	local friendID, _, _, _, _, _, standingText, _, nextThreshold = GetFriendshipReputation(factionID)
-	if(friendID) then
-		if(not nextThreshold) then
+	local friendshipReputationData = C_GossipInfo.GetFriendshipReputation(factionID) -- Always has a table returned as 10.0.2
+	local standingText
+
+	local majorFactionReputationData = C_MajorFactions.GetMajorFactionData(factionID) -- Returns nil if not DF major faction as 10.0.2
+    
+	if(friendshipReputationData.friendshipFactionID ~= 0) then
+		standingText = friendshipReputationData.reaction
+		if(friendshipReputationData.nextThreshold == 0) then
 			min, max, cur = 0, 1, 1 -- force a full bar when maxed out
+		else
+			min = 0
+			max = friendshipReputationData.nextThreshold
+			cur = friendshipReputationData.standing
 		end
 		standingID = 5 -- force friends' color
+	elseif(majorFactionReputationData) then -- DF major factions
+		name = majorFactionReputationData.name
+		min = 0
+		max = majorFactionReputationData.renownLevelThreshold
+		cur = majorFactionReputationData.renownReputationEarned
+		standingText = format(MAJOR_FACTION_RENOWN_LEVEL_TOAST, majorFactionReputationData.renownLevel)
+		standingID = 5
 	else
 		local value, nextThreshold, _, hasRewardPending = C_Reputation.GetFactionParagonInfo(factionID)
 		if(value) then
